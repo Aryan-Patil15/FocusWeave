@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Vintage light mode - warm, aged cream tones - MORE VISIBLE */
+    --background: 38 30% 92%;
+    --foreground: 25 15% 15%;
+    --card: 38 28% 95%;
+    --card-foreground: 25 15% 15%;
+    --popover: 38 28% 95%;
+    --popover-foreground: 25 15% 15%;
+    --primary: 18 75% 55%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 38 20% 88%;
+    --secondary-foreground: 25 10% 25%;
+    --muted: 38 18% 85%;
+    --muted-foreground: 25 8% 45%;
+    --accent: 30 20% 80%;
+    --accent-foreground: 25 15% 20%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 38 20% 83%;
+    --input: 38 20% 90%;
+    --ring: 18 75% 55%;
+    --radius: 0.5rem;
+    --chart-1: 18 75% 55%;
+    --chart-2: 18 75% 65%;
+    --chart-3: 18 75% 50%;
+    --chart-4: 25 60% 65%;
+    --chart-5: 48 20% 70%;
+  }
+
+  .dark {
+    /* Dark mode - warm vintage gray base for better orange harmony */
+    --background: 24 10% 16%;
+    --foreground: 36 20% 92%;
+    --card: 24 10% 20%;
+    --card-foreground: 36 20% 92%;
+    --popover: 24 10% 19%;
+    --popover-foreground: 36 20% 92%;
+    --primary: 18 75% 55%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 26 9% 24%;
+    --secondary-foreground: 36 20% 92%;
+    --muted: 26 8% 23%;
+    --muted-foreground: 30 12% 70%;
+    --accent: 28 12% 26%;
+    --accent-foreground: 36 20% 92%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 28 10% 30%;
+    --input: 28 9% 27%;
+    --ring: 18 75% 55%;
+    --chart-1: 18 75% 55%;
+    --chart-2: 18 75% 65%;
+    --chart-3: 18 75% 50%;
+    --chart-4: 25 60% 75%;
+    --chart-5: 48 20% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideRight {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-slideRight {
+    animation: slideRight 0.5s ease-out forwards;
+  }
+
+  .animate-slideUp {
+    animation: slideUp 0.5s ease-out forwards;
+  }
+
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .dark .glass-effect {
+    background: rgba(52, 46, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .btn-hover-lift {
+    transition: all 0.3s ease-out;
+  }
+
+  .btn-hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(242, 133, 0, 0.2);
+  }
+
+  .card-soft {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .dark .card-soft {
+    background: rgba(56, 49, 44, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent;
+  }
+}
