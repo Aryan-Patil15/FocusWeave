@@ -213,7 +213,7 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## DEMO Video
 
-Unable to issue video link by github. Videos have been manually uploaded as "Demo1", "Demo2"
+Unable to issue video link by github. Videos have been manually uploaded as "Demo1", "Demo2", "Demo3"
 
 
 
