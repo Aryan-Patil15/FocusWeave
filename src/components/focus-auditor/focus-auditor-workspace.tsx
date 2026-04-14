@@ -1,13 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis } from 'recharts';
-import { BarChart as BarChartIcon, BrainCircuit, ClipboardList, PlusCircle, Sparkles, Target, Upload } from 'lucide-react';
+import { BarChart as BarChartIcon, BrainCircuit, ClipboardList, Flame, Sparkles, Target, Trophy, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -20,88 +18,69 @@ import { handleAuditTaskAlignment } from '@/lib/actions';
 import type { AuditTaskAlignmentOutput } from '@/ai/flows/audit-task-alignment';
 import {
   buildActualTimeline,
-  buildPlanTimeline,
-  FOCUS_AUDITOR_COLORS,
   FOCUS_AUDITOR_LABELS,
   getFocusColor,
   minuteToTimeLabel,
   parseActivityLogJson,
   timeLabelToMinute,
-  validateActivityLogs,
-  validateFocusPlanBlocks,
 } from '@/lib/focus-auditor-engine';
 import {
   loadFocusActivityLogs,
-  loadFocusPlanBlocks,
   saveFocusActivityLogs,
-  saveFocusAuditResult,
-  saveFocusPlanBlocks,
 } from '@/lib/focus-auditor-storage';
 import { FocusClock } from '@/components/focus-auditor/focus-clock';
-import type { FocusActivityLogEntry, FocusPlanBlock, FocusPlanType, FocusTimelineSegment } from '@/types/focus-auditor';
-import { FOCUS_AUDITOR_PLAN_TYPES } from '@/types/focus-auditor';
+import type { FocusActivityLogEntry } from '@/types/focus-auditor';
+import type { BehaviorSignalSnapshot, TaskType } from '@/types/behavior-intelligence';
+import { runBehaviorIntelligence } from '@/lib/behavior-intelligence';
 
-function createEmptyBlock(): FocusPlanBlock {
-  return {
-    id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    label: '',
-    type: 'focus',
-    startMinute: 9 * 60,
-    endMinute: 10 * 60,
-  };
+type RewardProfile = {
+  totalPoints: number;
+  currentStreak: number;
+  bestStreak: number;
+  lastRewardDate?: string;
+  level: 'Bronze' | 'Silver' | 'Gold' | 'Platinum';
+};
+
+const REWARD_STORAGE_KEY = 'focusWeave.reward.profile';
+
+function getTaskTypeFromTask(taskName: string, taskDescription = ''): TaskType {
+  const normalized = `${taskName} ${taskDescription}`.toLowerCase();
+  if (normalized.includes('meeting') || normalized.includes('call')) return 'meeting';
+  if (normalized.includes('study') || normalized.includes('learn')) return 'study';
+  if (normalized.includes('creative') || normalized.includes('design') || normalized.includes('write')) return 'creative';
+  if (normalized.includes('admin') || normalized.includes('email') || normalized.includes('report')) return 'admin';
+  if (normalized.includes('focus') || normalized.includes('build') || normalized.includes('code')) return 'deep-work';
+  return 'other';
 }
 
-function TimelineStrip({ title, segments, emptyLabel }: { title: string; segments: FocusTimelineSegment[]; emptyLabel: string }) {
-  return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-base font-semibold">{title}</h3>
-        <span className="text-xs text-muted-foreground">00:00 to 24:00</span>
-      </div>
+function getTaskTypeFromActivity(activity: string): TaskType {
+  const normalized = activity.toLowerCase();
+  if (normalized.includes('meeting')) return 'meeting';
+  if (normalized.includes('study')) return 'study';
+  if (normalized.includes('admin') || normalized.includes('email')) return 'admin';
+  if (normalized.includes('work') || normalized.includes('focus')) return 'deep-work';
+  if (normalized.includes('creative')) return 'creative';
+  return 'other';
+}
 
-      {segments.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
-          {emptyLabel}
-        </div>
-      ) : (
-        <>
-          <div className="flex h-8 overflow-hidden rounded-full border border-border bg-muted/30">
-            {segments.map((segment) => (
-              <div
-                key={`${title}-${segment.startMinute}-${segment.type}`}
-                style={{
-                  width: `${(segment.minutes / 1440) * 100}%`,
-                  backgroundColor: FOCUS_AUDITOR_COLORS[segment.type],
-                }}
-                title={`${segment.label}: ${minuteToTimeLabel(segment.startMinute)}-${minuteToTimeLabel(segment.endMinute)}`}
-              />
-            ))}
-          </div>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {segments.slice(0, 8).map((segment) => (
-              <div key={`${segment.type}-${segment.startMinute}`} className="flex items-center justify-between rounded-xl border border-border/70 bg-background px-3 py-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: FOCUS_AUDITOR_COLORS[segment.type] }} />
-                  <span>{segment.label}</span>
-                </div>
-                <span className="text-muted-foreground">
-                  {minuteToTimeLabel(segment.startMinute)}-{minuteToTimeLabel(segment.endMinute)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
+function getRewardLevel(points: number): RewardProfile['level'] {
+  if (points >= 2000) return 'Platinum';
+  if (points >= 1200) return 'Gold';
+  if (points >= 600) return 'Silver';
+  return 'Bronze';
 }
 
 export function FocusAuditorWorkspace() {
   const { tasks } = useTasks();
-  const [planBlocks, setPlanBlocks] = useState<FocusPlanBlock[]>([]);
   const [activityLogs, setActivityLogs] = useState<FocusActivityLogEntry[]>([]);
   const [activityJson, setActivityJson] = useState('');
   const [taskAuditResult, setTaskAuditResult] = useState<AuditTaskAlignmentOutput | null>(null);
+  const [rewardProfile, setRewardProfile] = useState<RewardProfile>({
+    totalPoints: 0,
+    currentStreak: 0,
+    bestStreak: 0,
+    level: 'Bronze',
+  });
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isAuditing, setIsAuditing] = useState(false);
@@ -110,11 +89,10 @@ export function FocusAuditorWorkspace() {
 
   useEffect(() => {
     // 1. Initial local load
-    const storedPlan = loadFocusPlanBlocks();
     const storedLogs = loadFocusActivityLogs();
     const storedResult = localStorage.getItem('focusWeave.focusAuditor.taskResult');
+    const storedReward = localStorage.getItem(REWARD_STORAGE_KEY);
 
-    setPlanBlocks(storedPlan);
     setActivityLogs(storedLogs);
     setActivityJson(storedLogs.length > 0 ? JSON.stringify(storedLogs, null, 2) : '');
 
@@ -123,6 +101,13 @@ export function FocusAuditorWorkspace() {
         setTaskAuditResult(JSON.parse(storedResult));
       } catch (e) {
         console.error("Failed to load task result");
+      }
+    }
+    if (storedReward) {
+      try {
+        setRewardProfile(JSON.parse(storedReward));
+      } catch (e) {
+        console.error('Failed to load reward profile');
       }
     }
 
@@ -151,32 +136,50 @@ export function FocusAuditorWorkspace() {
     setIsLoaded(true);
   }, [user?.uid]);
 
-  const planTimeline = buildPlanTimeline(planBlocks);
   const actualTimeline = buildActualTimeline(activityLogs);
+  const behaviorSignals = useMemo<BehaviorSignalSnapshot[]>(() => {
+    if (activityLogs.length === 0) return [];
+    const doneTasks = tasks.filter((task) => task.status === 'done');
+    const deepWorkTaskIds = new Set(
+      doneTasks
+        .filter((task) => getTaskTypeFromTask(task.name, task.description) === 'deep-work')
+        .map((task) => task.id)
+    );
 
-  function updatePlanBlock(blockId: string, updates: Partial<FocusPlanBlock>) {
-    setPlanBlocks((currentBlocks) => {
-      const nextBlocks = currentBlocks.map((block) => (block.id === blockId ? { ...block, ...updates } : block));
-      saveFocusPlanBlocks(nextBlocks);
-      return nextBlocks;
-    });
-  }
+    return activityLogs.map((entry, index) => {
+      const start = new Date(entry.timestamp);
+      const end = new Date(start.getTime() + entry.duration * 60_000);
+      const appSwitches = entry.activity === 'social' ? 10 : entry.activity === 'idle' ? 7 : 2;
+      const interruptions = entry.activity === 'social' || entry.activity === 'meeting' ? 4 : 1;
+      const delayCount = entry.activity === 'idle' ? 2 : 0;
+      const taskType = getTaskTypeFromActivity(entry.activity);
 
-  function addPlanBlock() {
-    setPlanBlocks((currentBlocks) => {
-      const nextBlocks = [...currentBlocks, createEmptyBlock()];
-      saveFocusPlanBlocks(nextBlocks);
-      return nextBlocks;
+      return {
+        timestamp: entry.timestamp,
+        taskId: doneTasks[index % Math.max(doneTasks.length, 1)]?.id,
+        taskType,
+        actualStart: start.toISOString(),
+        actualEnd: end.toISOString(),
+        completionStatus: entry.activity === 'idle' || entry.activity === 'social' ? 'partial' : 'completed',
+        completionMinutes: Math.max(1, Math.round(entry.duration * (entry.activity === 'social' ? 0.6 : 0.9))),
+        expectedMinutes: entry.duration,
+        appSwitches,
+        idleMinutes: entry.activity === 'idle' ? Math.round(entry.duration * 0.8) : Math.round(entry.duration * 0.15),
+        sessionMinutes: entry.duration,
+        energyRating: entry.activity === 'sleep' ? 8 : 6,
+        breakCount: entry.activity === 'rest' ? 1 : 0,
+        interruptions,
+        delayCount,
+        wasRescheduled: deepWorkTaskIds.has(doneTasks[index % Math.max(doneTasks.length, 1)]?.id ?? '') && delayCount > 0,
+        distractingAppOpenCount: entry.activity === 'social' ? 1 : 0,
+      };
     });
-  }
+  }, [activityLogs, tasks]);
 
-  function removePlanBlock(blockId: string) {
-    setPlanBlocks((currentBlocks) => {
-      const nextBlocks = currentBlocks.filter((block) => block.id !== blockId);
-      saveFocusPlanBlocks(nextBlocks);
-      return nextBlocks;
-    });
-  }
+  const behaviorIntelligence = useMemo(() => {
+    if (behaviorSignals.length === 0) return null;
+    return runBehaviorIntelligence([], behaviorSignals);
+  }, [behaviorSignals]);
   function importLogs() {
     const parsed = parseActivityLogJson(activityJson);
     if (parsed.errors.length > 0) {
@@ -273,6 +276,30 @@ export function FocusAuditorWorkspace() {
 
       setTaskAuditResult(result);
       localStorage.setItem('focusWeave.focusAuditor.taskResult', JSON.stringify(result));
+
+      const today = new Date().toISOString().slice(0, 10);
+      const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+      const earnedPoints = Math.max(10, Math.round(result.alignedMinutes * 0.8 + result.alignmentScore * 1.5));
+
+      setRewardProfile((current) => {
+        const alreadyRewardedToday = current.lastRewardDate === today;
+        const nextStreak =
+          alreadyRewardedToday
+            ? current.currentStreak
+            : current.lastRewardDate === yesterday
+              ? current.currentStreak + 1
+              : 1;
+
+        const updated: RewardProfile = {
+          totalPoints: current.totalPoints + (alreadyRewardedToday ? 0 : earnedPoints),
+          currentStreak: nextStreak,
+          bestStreak: Math.max(current.bestStreak, nextStreak),
+          lastRewardDate: today,
+          level: getRewardLevel(current.totalPoints + (alreadyRewardedToday ? 0 : earnedPoints)),
+        };
+        localStorage.setItem(REWARD_STORAGE_KEY, JSON.stringify(updated));
+        return updated;
+      });
 
       // Store in Firestore with date
       if (user?.uid) {
@@ -372,6 +399,40 @@ export function FocusAuditorWorkspace() {
         </TabsList>
 
         <TabsContent value="visualization" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader className="pb-2">
+                <CardDescription>Real-time detection</CardDescription>
+                <CardTitle className="text-xl">
+                  {behaviorIntelligence ? behaviorIntelligence.cognitiveState.state.replace('-', ' ') : 'Waiting for activity data'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                Live cognitive-state estimate based on session length, switching, interruptions, and completion velocity.
+              </CardContent>
+            </Card>
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader className="pb-2">
+                <CardDescription>Root cause AI</CardDescription>
+                <CardTitle className="text-xl">
+                  {behaviorIntelligence?.loops[0]?.type.replace('-', ' ') || 'No dominant loop'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                {behaviorIntelligence?.loops[0]?.description || 'Import more logs to identify behavior loops like distraction or avoidance.'}
+              </CardContent>
+            </Card>
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader className="pb-2">
+                <CardDescription>Dopamine reward system</CardDescription>
+                <CardTitle className="text-xl">{rewardProfile.totalPoints} points</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                Level {rewardProfile.level} · {rewardProfile.currentStreak}-day streak.
+              </CardContent>
+            </Card>
+          </div>
+
           <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
             <FocusClock
               title="Actual Day Map"
@@ -489,7 +550,7 @@ export function FocusAuditorWorkspace() {
             </Card>
           ) : (
             <>
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-4">
                 <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-br from-card to-primary/5 shadow-md">
                   <CardHeader className="pb-2">
                     <CardDescription>Overall Alignment</CardDescription>
@@ -523,6 +584,18 @@ export function FocusAuditorWorkspace() {
                   </CardHeader>
                   <CardContent className="text-sm text-muted-foreground">
                     Minutes spent on activities that strongly match your done tasks.
+                  </CardContent>
+                </Card>
+                <Card className="shadow-sm">
+                  <CardHeader className="pb-2">
+                    <CardDescription>Reward Status</CardDescription>
+                    <CardTitle className="flex items-center gap-2 text-3xl font-bold">
+                      <Trophy className="h-7 w-7 text-primary" />
+                      {rewardProfile.totalPoints}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-muted-foreground">
+                    {rewardProfile.level} tier · <Flame className="mr-1 inline h-4 w-4 text-orange-500" /> {rewardProfile.currentStreak}-day streak.
                   </CardContent>
                 </Card>
               </div>
@@ -634,6 +707,18 @@ export function FocusAuditorWorkspace() {
                           </p>
                         </div>
                       ))}
+                      {behaviorIntelligence?.loops.length ? (
+                        <div className="rounded-xl border border-border bg-background p-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Root cause AI</p>
+                          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                            {behaviorIntelligence.loops.slice(0, 2).map((loop) => (
+                              <li key={loop.type}>
+                                • {loop.description} ({loop.severity}, {loop.occurrences} signals)
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
                     </CardContent>
                   </Card>
 
