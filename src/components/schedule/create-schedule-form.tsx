@@ -70,6 +70,8 @@ export function CreateScheduleForm() {
             category: aiTask.category,
             priority: aiTask.priority || 'medium',
             dueDate: dueDateISO,
+            startTime: aiTask.startTime,
+            endTime: aiTask.endTime,
             status: 'todo',
           };
         });

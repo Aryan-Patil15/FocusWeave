@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Edit3, MoreVertical, Trash2, CalendarDays, AlertTriangle, Zap, ListChecks, CircleSlash } from 'lucide-react';
+import { Edit3, MoreVertical, Trash2, CalendarDays, AlertTriangle, Zap, ListChecks, CircleSlash, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isValid } from 'date-fns';
 
@@ -97,6 +97,14 @@ export function TaskItem({ task, onStatusChange, onDelete, onEdit }: TaskItemPro
             <div className="flex items-center">
               <CalendarDays className="mr-1.5 h-3.5 w-3.5" />
               <span>{formattedDueDate}</span>
+            </div>
+          )}
+          {(task.startTime || task.endTime) && (
+            <div className="flex items-center">
+              <Clock className="mr-1.5 h-3.5 w-3.5" />
+              <span>
+                {task.startTime || '??:??'} - {task.endTime || '??:??'}
+              </span>
             </div>
           )}
           {task.category && (

@@ -20,7 +20,9 @@ const AITaskEntrySchema = z.object({
   description: z.string().optional().describe("A brief description of the task."),
   category: z.string().optional().describe("A suggested category for the task (e.g., Work, Study, Personal, Exercise)."),
   priority: z.enum(['low', 'medium', 'high']).optional().describe("The priority of the task ('low', 'medium', 'high'). Default to 'medium' if unsure."),
-  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("The suggested due date for the task in YYYY-MM-DD format, if inferable. Omit if not applicable or too general.")
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("The suggested due date for the task in YYYY-MM-DD format, if inferable. Omit if not applicable or too general."),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/).optional().describe("The suggested start time in HH:mm format (24h clock)."),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/).optional().describe("The suggested end time in HH:mm format (24h clock).")
 });
 
 const CreateScheduleOutputSchema = z.object({
@@ -58,15 +60,17 @@ const createSchedulePrompt = ai.definePrompt({
       *   \\\`category\\\`: (Optional) A suggested category like "Study", "Work", "Personal", "Exercise", "Travel".
       *   \\\`priority\\\`: (Optional) The priority of the task: 'low', 'medium', or 'high'. Default to 'medium' if unsure.
       *   \\\`dueDate\\\`: (Optional) A suggested due date in YYYY-MM-DD format if it can be clearly inferred from the schedule description. Omit if not clear.
+      *   \\\`startTime\\\`: (Optional) Suggested start time (HH:mm). 
+      *   \\\`endTime\\\`: (Optional) Suggested end time (HH:mm). Try to make durations realistic.
   3.  **Output Structure:**
       *   The overall schedule text should be returned in the \\\`scheduleText\\\` field.
       *   The extracted tasks MUST be returned in the \\\`tasks\\\` array. This array's length should reflect the complexity and distinct actions implied by the user's input. If no specific actionable items are identified despite the user's request, the \\\`tasks\\\` array can be empty or omitted.
 
   Example for \\\`tasks\\\` array when input is "Plan my JEE prep for today. I need to cover Physics, Chemistry, and Math. Give me 3 tasks.":
   [
-    { "name": "Study Physics - Kinematics", "description": "Cover chapters 1-3 and solve 10 example problems.", "category": "Study", "priority": "high", "dueDate": "YYYY-MM-DD (today)" },
-    { "name": "Practice Chemistry - Chemical Bonding", "description": "Review VBT and MOT, practice 15 MCQs.", "category": "Study", "priority": "high", "dueDate": "YYYY-MM-DD (today)" },
-    { "name": "Solve Math Problems - Calculus", "description": "Work through differentiation exercises from chapter 2.", "category": "Study", "priority": "medium", "dueDate": "YYYY-MM-DD (today)" }
+    { "name": "Study Physics - Kinematics", "description": "Cover chapters 1-3 and solve 10 example problems.", "category": "Study", "priority": "high", "dueDate": "YYYY-MM-DD (today)", "startTime": "09:00", "endTime": "11:00" },
+    { "name": "Practice Chemistry - Chemical Bonding", "description": "Review VBT and MOT, practice 15 MCQs.", "category": "Study", "priority": "high", "dueDate": "YYYY-MM-DD (today)", "startTime": "11:30", "endTime": "13:00" },
+    { "name": "Solve Math Problems - Calculus", "description": "Work through differentiation exercises from chapter 2.", "category": "Study", "priority": "medium", "dueDate": "YYYY-MM-DD (today)", "startTime": "14:30", "endTime": "16:00" }
   ]
 
   Example for \\\`tasks\\\` array when input is "Team meeting tomorrow at 10 AM about project Alpha":

@@ -3,12 +3,12 @@
 import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
 import { useAuth } from '@/hooks/use-auth';
-import { WeatherWidget } from '@/components/dashboard/weather-widget';
 import { QuoteWidget } from '@/components/dashboard/quote-widget';
 import { NewsWidget } from '@/components/dashboard/news-widget';
 import { QuickLinksWidget } from '@/components/dashboard/quick-links-widget';
 import { DirectSearchWidget } from '@/components/dashboard/direct-search-widget';
 import { TaskStatusWidget } from '@/components/dashboard/task-status-widget';
+import { AuditResultsWidget } from '@/components/dashboard/audit-results-widget';
 import { useSettings } from '@/contexts/settings-context';
 import {
   type DashboardWidgetPreferences,
@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 
 const WIDGETS: Record<DashboardWidgetKey, { component: React.ReactNode; label: string }> = {
   directSearch: { component: <DirectSearchWidget />, label: 'Direct Search' },
-  weather: { component: <WeatherWidget />, label: 'Weather Forecast' },
+  focusAudit: { component: <AuditResultsWidget />, label: 'Focus Audit Trends' },
   quote: { component: <QuoteWidget />, label: 'Quote of the Day' },
   news: { component: <NewsWidget />, label: 'Top News' },
   quickLinks: { component: <QuickLinksWidget />, label: 'Quick Links' },

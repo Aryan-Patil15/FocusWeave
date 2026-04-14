@@ -13,6 +13,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { useTasks } from '@/contexts/tasks-context';
+import { useAuth } from '@/hooks/use-auth';
+import { db } from '@/lib/firebase';
+import { doc, setDoc, arrayUnion, getDoc } from 'firebase/firestore';
 import { handleAuditTaskAlignment } from '@/lib/actions';
 import type { AuditTaskAlignmentOutput } from '@/ai/flows/audit-task-alignment';
 import {
@@ -20,6 +23,7 @@ import {
   buildPlanTimeline,
   FOCUS_AUDITOR_COLORS,
   FOCUS_AUDITOR_LABELS,
+  getFocusColor,
   minuteToTimeLabel,
   parseActivityLogJson,
   timeLabelToMinute,
@@ -101,17 +105,19 @@ export function FocusAuditorWorkspace() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isAuditing, setIsAuditing] = useState(false);
+  const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
+    // 1. Initial local load
     const storedPlan = loadFocusPlanBlocks();
     const storedLogs = loadFocusActivityLogs();
     const storedResult = localStorage.getItem('focusWeave.focusAuditor.taskResult');
- 
+
     setPlanBlocks(storedPlan);
     setActivityLogs(storedLogs);
     setActivityJson(storedLogs.length > 0 ? JSON.stringify(storedLogs, null, 2) : '');
-    
+
     if (storedResult) {
       try {
         setTaskAuditResult(JSON.parse(storedResult));
@@ -120,8 +126,30 @@ export function FocusAuditorWorkspace() {
       }
     }
 
+    // 2. Fetch latest from Cloud if user exists
+    if (user?.uid) {
+      const userRef = doc(db, 'userPreferences', user.uid);
+      const loadCloud = async () => {
+        try {
+          const snap = await getDoc(userRef);
+          if (snap.exists()) {
+            const data = snap.data();
+            const history = data.auditHistory || [];
+            if (history.length > 0) {
+              const latest = history[history.length - 1];
+              setTaskAuditResult(latest);
+              localStorage.setItem('focusWeave.focusAuditor.taskResult', JSON.stringify(latest));
+            }
+          }
+        } catch (err) {
+          console.warn("[FocusAuditor] Failed to load from cloud on mount:", err);
+        }
+      };
+      loadCloud();
+    }
+
     setIsLoaded(true);
-  }, []);
+  }, [user?.uid]);
 
   const planTimeline = buildPlanTimeline(planBlocks);
   const actualTimeline = buildActualTimeline(activityLogs);
@@ -180,11 +208,30 @@ export function FocusAuditorWorkspace() {
       return;
     }
 
-    const doneTasks = tasks.filter(t => t.status === 'done').map(t => ({
-      id: t.id,
-      name: t.name,
-      description: t.description,
-    }));
+    const doneTasks = tasks.filter(t => t.status === 'done').map(t => {
+      let duration: number | undefined = undefined;
+      
+      if (t.startTime && t.endTime) {
+        const startMin = timeLabelToMinute(t.startTime);
+        const endMin = timeLabelToMinute(t.endTime);
+        
+        if (startMin < endMin) {
+          duration = endMin - startMin;
+        } else if (startMin > endMin) {
+          // Task spans across midnight
+          duration = (1440 - startMin) + endMin;
+        }
+      }
+
+      return {
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        duration,
+        startTime: t.startTime,
+        endTime: t.endTime,
+      };
+    });
 
     if (doneTasks.length === 0) {
       toast({
@@ -198,11 +245,20 @@ export function FocusAuditorWorkspace() {
     const parsed = parseActivityLogJson(activityJson);
     if (parsed.errors.length > 0) {
       setValidationErrors(parsed.errors);
+      toast({
+        variant: 'destructive',
+        title: 'Validation Error',
+        description: parsed.errors[0],
+      });
       return;
     }
 
     setIsAuditing(true);
     setValidationErrors([]);
+    
+    // Ensure state matches what we are auditing
+    setActivityLogs(parsed.entries);
+    saveFocusActivityLogs(parsed.entries);
 
     try {
       const result = await handleAuditTaskAlignment({
@@ -217,12 +273,33 @@ export function FocusAuditorWorkspace() {
 
       setTaskAuditResult(result);
       localStorage.setItem('focusWeave.focusAuditor.taskResult', JSON.stringify(result));
-      
+
+      // Store in Firestore with date
+      if (user?.uid) {
+        try {
+          const userRef = doc(db, 'userPreferences', user.uid);
+          const auditWithDate = {
+            ...result,
+            date: new Date().toISOString(),
+            type: 'task-alignment'
+          };
+
+          await setDoc(userRef, {
+            auditHistory: arrayUnion(auditWithDate)
+          }, { merge: true });
+
+          console.log("[FocusAuditor] Audit result saved to cloud.");
+        } catch (cloudErr) {
+          console.error("[FocusAuditor] Failed to save to cloud:", cloudErr);
+        }
+      }
+
       toast({
         title: 'Task Audit Complete',
-        description: `Your focus alignment is ${result.alignmentScore}%.`,
+        description: `Your focus alignment is ${result.alignmentScore}%. Result synced to cloud.`,
       });
     } catch (err) {
+      console.error("[FocusAuditor] Audit error:", err);
       toast({
         variant: 'destructive',
         title: 'Audit Failed',
@@ -287,164 +364,102 @@ export function FocusAuditorWorkspace() {
         </Card>
       ) : null}
 
-      <Tabs defaultValue="plan" className="space-y-4">
+      <Tabs defaultValue="logs" className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="plan">Plan Builder</TabsTrigger>
-          <TabsTrigger value="logs">Activity Logs</TabsTrigger>
+          <TabsTrigger value="visualization">Logs Visualization</TabsTrigger>
+          <TabsTrigger value="logs">Activity Input</TabsTrigger>
           <TabsTrigger value="results">Audit Results</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="plan" className="space-y-6">
-          <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-            <Card className="shadow-sm">
-              <CardHeader className="flex flex-row items-start justify-between gap-4">
-                <div>
-                  <CardTitle>Custom Profile Builder</CardTitle>
-                  <CardDescription>
-                    Each block defines what your ideal day should look like. Midnight-crossing blocks are supported.
-                  </CardDescription>
-                </div>
-                <Button onClick={addPlanBlock} variant="outline">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Add Block
-                </Button>
+        <TabsContent value="visualization" className="space-y-6">
+          <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+            <FocusClock
+              title="Actual Day Map"
+              subtitle="Where your time actually went, visualized across 24 hours."
+              segments={actualTimeline}
+              emptyLabel="Import activity logs to see your daily focus map."
+            />
+
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle>Visualization Feed</CardTitle>
+                <CardDescription>
+                  Chronological breakdown of imported activity logs.
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {planBlocks.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-5 py-8 text-sm text-muted-foreground">
-                    No plan blocks yet. Add one manually using the button above.
+              <CardContent className="max-h-[600px] overflow-auto">
+                {activityLogs.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <ClipboardList className="mb-3 h-10 w-10 text-muted-foreground/30" />
+                    <p className="text-sm text-muted-foreground">
+                      No activity data found.<br/>Import logs using the Activity Input tab.
+                    </p>
                   </div>
                 ) : (
-                  planBlocks.map((block) => (
-                    <div key={block.id} className="rounded-2xl border border-border bg-background p-4">
-                      <div className="grid gap-4 md:grid-cols-4">
-                        <div className="md:col-span-1">
-                          <label className="mb-2 block text-sm font-medium">Label</label>
-                          <Input
-                            value={block.label ?? ''}
-                            onChange={(event) => updatePlanBlock(block.id, { label: event.target.value })}
-                            placeholder={FOCUS_AUDITOR_LABELS[block.type]}
-                          />
-                        </div>
-                        <div>
-                          <label className="mb-2 block text-sm font-medium">Type</label>
-                          <Select
-                            value={block.type}
-                            onValueChange={(value) => updatePlanBlock(block.id, { type: value as FocusPlanType })}
+                  <div className="space-y-2">
+                    {activityLogs.map((entry) => {
+                      const color = getFocusColor(entry.activity);
+                      return (
+                        <div
+                          key={entry.id}
+                          className="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border bg-card px-4 py-3 transition-all hover:shadow-md"
+                        >
+                          <div className="absolute left-0 top-0 h-full w-1.5 rounded-l-xl" style={{ backgroundColor: color }} />
+                          <div
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white text-[10px] font-black"
+                            style={{ backgroundColor: color }}
                           >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {FOCUS_AUDITOR_PLAN_TYPES.map((type) => (
-                                <SelectItem key={type} value={type}>
-                                  {FOCUS_AUDITOR_LABELS[type]}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <label className="mb-2 block text-sm font-medium">Start</label>
-                          <Input
-                            type="time"
-                            value={minuteToTimeLabel(block.startMinute)}
-                            onChange={(event) => updatePlanBlock(block.id, { startMinute: timeLabelToMinute(event.target.value) })}
-                          />
-                        </div>
-                        <div>
-                          <div className="mb-2 flex items-center justify-between">
-                            <label className="block text-sm font-medium">End</label>
-                            <Button variant="ghost" size="sm" onClick={() => removePlanBlock(block.id)}>Remove</Button>
+                            {entry.duration}m
                           </div>
-                          <Input
-                            type="time"
-                            value={minuteToTimeLabel(block.endMinute)}
-                            onChange={(event) => updatePlanBlock(block.id, { endMinute: timeLabelToMinute(event.target.value) })}
-                          />
+                          <div className="flex-1 min-w-0 space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-foreground truncate">
+                                {FOCUS_AUDITOR_LABELS[entry.activity] || entry.activity}
+                              </span>
+                              <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[9px] font-bold text-muted-foreground">
+                                {entry.timestamp}
+                              </span>
+                            </div>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {entry.notes || 'No notes added'}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  ))
+                      );
+                    })}
+                  </div>
                 )}
               </CardContent>
             </Card>
- 
-            <FocusClock
-              title="Planned Day Preview"
-              subtitle="A circular view of your intended daily rhythm."
-              segments={planTimeline}
-              emptyLabel="Add plan blocks to see your circular schedule."
-            />
           </div>
         </TabsContent>
 
         <TabsContent value="logs" className="space-y-6">
-          <div className="grid gap-6 xl:grid-cols-[1fr_0.95fr]">
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Upload className="h-5 w-5 text-primary" />
-                  Activity Log Input
-                </CardTitle>
-                <CardDescription>
-                  Paste JSON entries with `timestamp`, `duration`, and `activity`. Up to 200 entries, with timestamps in ISO 8601 or HH:mm format.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Textarea
-                  value={activityJson}
-                  onChange={(event) => setActivityJson(event.target.value)}
-                  className="min-h-[360px] font-mono text-sm"
-                  placeholder='[{"timestamp":"2026-04-14T09:00:00","duration":45,"activity":"focus"}]'
-                />
-                <div className="flex flex-wrap gap-3">
-                  <Button onClick={importLogs}>
-                    <ClipboardList className="mr-2 h-4 w-4" />
-                    Import Logs
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="space-y-6">
-              <FocusClock
-                title="Actual Day Preview"
-                subtitle="Imported activity logs rendered across the day."
-                segments={actualTimeline}
-                emptyLabel="Import activity logs to see your actual day map."
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5 text-primary" />
+                Activity Log JSON Input
+              </CardTitle>
+              <CardDescription>
+                Paste JSON entries with `timestamp`, `duration`, and `activity`.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                value={activityJson}
+                onChange={(event) => setActivityJson(event.target.value)}
+                className="min-h-[400px] font-mono text-sm"
+                placeholder='[{"timestamp":"2026-04-14T09:00:00","duration":45,"activity":"focus"}]'
               />
-
-              <Card className="shadow-sm">
-                <CardHeader>
-                  <CardTitle>Imported Entries</CardTitle>
-                  <CardDescription>
-                    {activityLogs.length > 0 ? `${activityLogs.length} entry(s) ready for analysis.` : 'No activity entries imported yet.'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="max-h-[320px] overflow-auto">
-                  {activityLogs.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Use the JSON import to load your actual activity data.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {activityLogs.slice(0, 12).map((entry) => (
-                        <div key={entry.id} className="flex items-center justify-between rounded-xl border border-border/70 bg-background px-3 py-2 text-sm">
-                          <div>
-                            <p className="font-medium">{FOCUS_AUDITOR_LABELS[entry.activity] || entry.activity}</p>
-                            <p className="text-xs text-muted-foreground">{entry.notes || 'No note added'}</p>
-                          </div>
-                          <div className="text-right">
-                            <p>{entry.duration} min</p>
-                            <p className="text-xs text-muted-foreground">{entry.timestamp}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+              <div className="flex flex-wrap gap-3">
+                <Button onClick={importLogs}>
+                  <ClipboardList className="mr-2 h-4 w-4" />
+                  Import & Visualize
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="results" className="space-y-6">
@@ -454,7 +469,7 @@ export function FocusAuditorWorkspace() {
                 <Target className="mb-4 h-12 w-12 text-muted-foreground/30" />
                 <h3 className="text-xl font-semibold">Ready for Audit</h3>
                 <p className="mt-2 max-w-xl text-muted-foreground">
-                  The AI will compare your <strong>Done Tasks</strong> with your <strong>Activity Logs</strong>. 
+                  The AI will compare your <strong>Done Tasks</strong> with your <strong>Activity Logs</strong>.
                   It semantically matches site names and descriptions to your task names to uncover your true focus alignment.
                 </p>
                 <div className="mt-6 flex flex-col items-center gap-2">
@@ -485,9 +500,9 @@ export function FocusAuditorWorkspace() {
                   </CardHeader>
                   <CardContent>
                     <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                      <div 
-                        className="h-full bg-primary transition-all duration-1000" 
-                        style={{ width: `${taskAuditResult.alignmentScore}%` }} 
+                      <div
+                        className="h-full bg-primary transition-all duration-1000"
+                        style={{ width: `${taskAuditResult.alignmentScore}%` }}
                       />
                     </div>
                   </CardContent>
@@ -551,8 +566,8 @@ export function FocusAuditorWorkspace() {
                               <TableCell className="text-right">{taskAuditResult.unrelatedMinutes} min</TableCell>
                               <TableCell className="text-right">
                                 <Badge variant="secondary" className="text-muted-foreground">
-                                  {taskAuditResult.totalTrackedMinutes > 0 
-                                    ? Math.round((taskAuditResult.unrelatedMinutes / taskAuditResult.totalTrackedMinutes) * 100) 
+                                  {taskAuditResult.totalTrackedMinutes > 0
+                                    ? Math.round((taskAuditResult.unrelatedMinutes / taskAuditResult.totalTrackedMinutes) * 100)
                                     : 0}%
                                 </Badge>
                               </TableCell>
@@ -577,17 +592,17 @@ export function FocusAuditorWorkspace() {
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={taskChartData} layout="vertical" margin={{ left: 20, right: 30, top: 10 }}>
                           <XAxis type="number" hide />
-                          <YAxis 
-                            dataKey="name" 
-                            type="category" 
-                            width={100} 
+                          <YAxis
+                            dataKey="name"
+                            type="category"
+                            width={100}
                             tick={{ fill: 'currentColor', fontSize: 12 }}
                           />
                           <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                          <Bar 
-                            dataKey="minutes" 
-                            fill="hsl(var(--primary))" 
-                            radius={[0, 4, 4, 0]} 
+                          <Bar
+                            dataKey="minutes"
+                            fill="hsl(var(--primary))"
+                            radius={[0, 4, 4, 0]}
                             barSize={32}
                             label={{ position: 'right', fill: 'currentColor', fontSize: 11, formatter: (val: number) => `${val}m` }}
                           />

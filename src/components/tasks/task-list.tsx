@@ -27,7 +27,14 @@ export function TaskList() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [newTask, setNewTask] = useState<Partial<Task>>({ name: '', description: '', priority: 'medium', status: 'todo' });
+  const [newTask, setNewTask] = useState<Partial<Task>>({ 
+    name: '', 
+    description: '', 
+    priority: 'medium', 
+    status: 'todo',
+    startTime: '',
+    endTime: ''
+  });
 
   const { toast } = useToast();
 
@@ -54,7 +61,15 @@ export function TaskList() {
 
   const handleOpenModalForNew = () => {
     setEditingTask(null);
-    setNewTask({ name: '', description: '', priority: 'medium', status: 'todo', dueDate: new Date().toISOString().split('T')[0] });
+    setNewTask({ 
+      name: '', 
+      description: '', 
+      priority: 'medium', 
+      status: 'todo', 
+      dueDate: new Date().toISOString().split('T')[0],
+      startTime: '',
+      endTime: ''
+    });
     setIsModalOpen(true);
   };
 
@@ -78,7 +93,7 @@ export function TaskList() {
       toast({ title: 'Task Added', description: 'New task successfully created.'});
     }
     setIsModalOpen(false);
-    setNewTask({ name: '', description: '', priority: 'medium', status: 'todo' }); // quick thing here dont mind
+    setNewTask({ name: '', description: '', priority: 'medium', status: 'todo', startTime: '', endTime: '' });
     setEditingTask(null);
   };
 
@@ -215,6 +230,14 @@ export function TaskList() {
                         <SelectItem value="blocked">Blocked</SelectItem>
                     </SelectContent>
                 </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="startTime" className="text-right">Start Time</Label>
+              <Input type="time" id="startTime" value={newTask.startTime || ''} onChange={(e) => setNewTask(prev => ({...prev, startTime: e.target.value}))} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="endTime" className="text-right">End Time</Label>
+              <Input type="time" id="endTime" value={newTask.endTime || ''} onChange={(e) => setNewTask(prev => ({...prev, endTime: e.target.value}))} className="col-span-3" />
             </div>
           </div>
           <DialogFooter>

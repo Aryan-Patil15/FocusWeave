@@ -11,6 +11,8 @@ const DynamicTaskReallocationInputSchema = z.object({
     name: z.string().describe('The name of the task.'),
     dueDate: z.string().describe('The due date of the task in ISO format (YYYY-MM-DD).'),
     duration: z.number().describe('The estimated duration of the task in hours.'),
+    startTime: z.string().optional().describe('Start time in HH:mm.'),
+    endTime: z.string().optional().describe('End time in HH:mm.'),
   })).describe('A list of current tasks to be reallocated.'),
 });
 
@@ -20,6 +22,8 @@ const DynamicTaskReallocationOutputSchema = z.object({
   rescheduledTasks: z.array(z.object({
     name: z.string().describe('The name of the rescheduled task.'),
     newDueDate: z.string().describe('The new due date of the task in ISO format (YYYY-MM-DD).'),
+    newStartTime: z.string().optional().describe('New start time in HH:mm.'),
+    newEndTime: z.string().optional().describe('New end time in HH:mm.'),
   })).describe('A list of tasks that have been rescheduled with their new due dates.'),
   summary: z.string().describe('A summary of the rescheduling changes made.'),
 });
@@ -40,7 +44,7 @@ const prompt = ai.definePrompt({
 
   Here are the current tasks:
   {{#each currentTasks}}
-  - Name: {{{name}}}, Due Date: {{{dueDate}}}, Duration: {{{duration}}} hours
+  - Name: {{{name}}}, Due Date: {{{dueDate}}}, Duration: {{{duration}}} hours, Time: {{{startTime}}} to {{{endTime}}}
   {{/each}}
 
   Reschedule the tasks considering the reason and try to balance the load across future free slots.

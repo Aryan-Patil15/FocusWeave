@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Send, Loader, CheckCircle } from 'lucide-react';
+import { Send, Loader, CheckCircle, Clock } from 'lucide-react';
 
 interface TaskMessage {
   id: string;
@@ -14,6 +14,8 @@ interface TaskMessage {
     name: string;
     priority: 'low' | 'medium' | 'high';
     dueDate?: string;
+    startTime?: string;
+    endTime?: string;
   }>;
 }
 
@@ -80,9 +82,9 @@ export function ChatbotScheduleCreator() {
     // quick thing here dont mind
     setTimeout(() => {
       const mockTasks = [
-        { name: 'Complete project draft', priority: 'high' as const, dueDate: 'Friday' },
-        { name: 'Review and edit', priority: 'medium' as const, dueDate: 'Thursday' },
-        { name: 'Final submission', priority: 'high' as const, dueDate: 'Friday' },
+        { name: 'Complete project draft', priority: 'high' as const, dueDate: '2026-04-14', startTime: '09:00', endTime: '11:00' },
+        { name: 'Review and edit', priority: 'medium' as const, dueDate: '2026-04-14', startTime: '11:30', endTime: '13:00' },
+        { name: 'Final submission', priority: 'high' as const, dueDate: '2026-04-14', startTime: '15:00', endTime: '16:00' },
       ];
 
       const aiMessage: TaskMessage = {
@@ -226,6 +228,12 @@ export function ChatbotScheduleCreator() {
                                 {task.dueDate && (
                                   <span className="text-xs px-2 py-1 rounded-full bg-secondary dark:bg-muted text-foreground">
                                     Due: {task.dueDate}
+                                  </span>
+                                )}
+                                {(task.startTime || task.endTime) && (
+                                  <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {task.startTime || '??:??'} - {task.endTime || '??:??'}
                                   </span>
                                 )}
                               </div>

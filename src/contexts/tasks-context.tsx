@@ -10,6 +10,7 @@ import type { Task } from '@/types';
 
 interface TasksContextType {
   tasks: Task[];
+  auditHistory: any[]; // we vibin this works
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>; // Support legacy set state if needed
   addTask: (task: Task) => Promise<void>;
   updateTask: (task: Task) => Promise<void>;
@@ -22,6 +23,7 @@ const TasksContext = createContext<TasksContextType | undefined>(undefined);
 export function TasksProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [tasks, setTasksState] = useState<Task[]>([]);
+  const [auditHistory, setAuditHistory] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -44,8 +46,10 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         const dbTasks = normalizeStoredTasks(data?.userTasks);
         console.log(`[TasksProvider] Normalized ${dbTasks.length} tasks.`);
         setTasksState(dbTasks);
+        setAuditHistory(data?.auditHistory || []);
       } else {
         setTasksState([]); // Reset to empty if doc missing
+        setAuditHistory([]);
       }
       setIsLoading(false);
       setIsInitialized(true);
@@ -91,7 +95,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <TasksContext.Provider value={{ tasks, setTasks, addTask, updateTask, deleteTask, isLoading: isLoading || !isInitialized }}>
+    <TasksContext.Provider value={{ tasks, auditHistory, setTasks, addTask, updateTask, deleteTask, isLoading: isLoading || !isInitialized }}>
       {children}
     </TasksContext.Provider>
   );

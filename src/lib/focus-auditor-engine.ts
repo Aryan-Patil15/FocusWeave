@@ -30,7 +30,7 @@ export const FOCUS_AUDITOR_LABELS: Record<string, string> = {
   unlogged: 'Unlogged',
 };
 
-export const FOCUS_AUDITOR_COLORS: Record<FocusPlanType | FocusActivityType, string> = {
+export const FOCUS_AUDITOR_COLORS: Record<string, string> = {
   focus: '#22c55e',
   study: '#3b82f6',
   work: '#06b6d4',
@@ -47,6 +47,31 @@ export const FOCUS_AUDITOR_COLORS: Record<FocusPlanType | FocusActivityType, str
   idle: '#94a3b8',
   unlogged: '#cbd5e1',
 };
+
+export function getFocusColor(activity: string): string {
+  const lower = activity.toLowerCase();
+  
+  // 1. Direct match
+  if (FOCUS_AUDITOR_COLORS[lower]) return FOCUS_AUDITOR_COLORS[lower];
+
+  // 2. Keyword heuristic
+  if (lower.includes('study') || lower.includes('read') || lower.includes('learn') || lower.includes('lecture')) return FOCUS_AUDITOR_COLORS.study;
+  if (lower.includes('work') || lower.includes('code') || lower.includes('office')) return FOCUS_AUDITOR_COLORS.work;
+  if (lower.includes('sleep') || lower.includes('nap') || lower.includes('bed')) return FOCUS_AUDITOR_COLORS.sleep;
+  if (lower.includes('run') || lower.includes('gym') || lower.includes('workout') || lower.includes('exercise')) return FOCUS_AUDITOR_COLORS.exercise;
+  if (lower.includes('eat') || lower.includes('food') || lower.includes('breakfast') || lower.includes('lunch') || lower.includes('dinner') || lower.includes('meal')) return FOCUS_AUDITOR_COLORS.meal;
+  if (lower.includes('travel') || lower.includes('commute') || lower.includes('train') || lower.includes('bus') || lower.includes('drive')) return FOCUS_AUDITOR_COLORS.commute;
+  if (lower.includes('game') || lower.includes('movie') || lower.includes('scroll') || lower.includes('chill')) return FOCUS_AUDITOR_COLORS.rest;
+  if (lower.includes('social') || lower.includes('friend') || lower.includes('party')) return FOCUS_AUDITOR_COLORS.social;
+
+  // 3. Deterministic HSL color for unique strings
+  let hash = 0;
+  for (let i = 0; i < lower.length; i++) {
+    hash = lower.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const h = Math.abs(hash % 360);
+  return `hsl(${h}, 70%, 55%)`;
+}
 
 const COMPATIBILITY_MATRIX: Record<FocusPlanType, FocusActivityType[]> = {
   focus: ['focus', 'study', 'work'],
@@ -80,8 +105,17 @@ export function timeLabelToMinute(value: string): number {
   return hours * 60 + minutes;
 }
 
-function getMinuteOfDay(timestamp: string): number | null {
-  const timeOnlyMatch = /^(\d{2}):(\d{2})(?::\d{2})?$/.exec(timestamp.trim());
+function getMinuteOfDay(timestamp: string | number): number | null {
+  if (typeof timestamp === 'number') {
+    return Math.floor(timestamp) % MINUTES_PER_DAY;
+  }
+  
+  const trimmed = timestamp.trim();
+  if (/^\d+$/.test(trimmed)) {
+    return Number(trimmed) % MINUTES_PER_DAY;
+  }
+
+  const timeOnlyMatch = /^(\d{2}):(\d{2})(?::\d{2})?$/.exec(trimmed);
   if (timeOnlyMatch) {
     const hours = Number(timeOnlyMatch[1]);
     const minutes = Number(timeOnlyMatch[2]);
@@ -90,7 +124,7 @@ function getMinuteOfDay(timestamp: string): number | null {
     }
   }
 
-  const parsed = parseISO(timestamp);
+  const parsed = parseISO(trimmed);
   if (!isValid(parsed)) {
     return null;
   }
@@ -238,8 +272,8 @@ export function validateActivityLogs(entries: FocusActivityLogEntry[]): string[]
     if (minuteOfDay === null) {
       errors.push(`Entry ${index + 1} has an invalid timestamp. Use ISO 8601 or HH:mm.`);
     }
-    if (!Number.isFinite(entry.duration) || entry.duration < 1 || entry.duration > 120) {
-      errors.push(`Entry ${index + 1} has an invalid duration. Use 1 to 120 minutes.`);
+    if (!Number.isFinite(entry.duration) || entry.duration < 1 || entry.duration > 1440) {
+      errors.push(`Entry ${index + 1} has an invalid duration. Use 1 to 1440 minutes.`);
     }
   });
 
@@ -256,9 +290,16 @@ export function parseActivityLogJson(rawJson: string): { entries: FocusActivityL
     const entries = parsed.map((item, index) => {
       const record = item as Record<string, unknown>;
       const activity = typeof record.activity === 'string' ? record.activity : 'unlogged';
+      
+      // Support string or number for timestamp
+      let timestampVal = '';
+      if (typeof record.timestamp === 'string' || typeof record.timestamp === 'number') {
+        timestampVal = String(record.timestamp);
+      }
+
       return {
         id: typeof record.id === 'string' ? record.id : `log-${Date.now()}-${index}`,
-        timestamp: typeof record.timestamp === 'string' ? record.timestamp : '',
+        timestamp: timestampVal,
         duration: typeof record.duration === 'number' ? record.duration : Number(record.duration ?? 0),
         activity: activity as FocusActivityType,
         notes: typeof record.notes === 'string' ? record.notes : undefined,

@@ -1,8 +1,8 @@
-export type DashboardWidgetKey = 'directSearch' | 'weather' | 'quote' | 'news' | 'quickLinks' | 'taskStatus';
+export type DashboardWidgetKey = 'directSearch' | 'focusAudit' | 'quote' | 'news' | 'quickLinks' | 'taskStatus';
 
 export interface DashboardWidgetPreferences {
   directSearch: boolean;
-  weather: boolean;
+  focusAudit: boolean;
   quote: boolean;
   news: boolean;
   quickLinks: boolean;
@@ -10,11 +10,11 @@ export interface DashboardWidgetPreferences {
   widgetOrder: DashboardWidgetKey[];
 }
 
-const DEFAULT_ORDER: DashboardWidgetKey[] = ['weather', 'quote', 'taskStatus', 'directSearch', 'news', 'quickLinks'];
+const DEFAULT_ORDER: DashboardWidgetKey[] = ['focusAudit', 'quote', 'taskStatus', 'directSearch', 'news', 'quickLinks'];
 
 const DEFAULT_DASHBOARD_WIDGET_PREFERENCES: DashboardWidgetPreferences = {
   directSearch: true,
-  weather: true,
+  focusAudit: true,
   quote: true,
   news: true,
   quickLinks: true,
@@ -32,7 +32,7 @@ export function sanitizeDashboardWidgetPreferences(
 
   return {
     directSearch: typeof input?.directSearch === 'boolean' ? input.directSearch : true,
-    weather: typeof input?.weather === 'boolean' ? input.weather : true,
+    focusAudit: typeof input?.focusAudit === 'boolean' ? input.focusAudit : true,
     quote: typeof input?.quote === 'boolean' ? input.quote : true,
     news: typeof input?.news === 'boolean' ? input.news : true,
     quickLinks: typeof input?.quickLinks === 'boolean' ? input.quickLinks : true,
