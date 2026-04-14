@@ -8,7 +8,7 @@ import type { ImportantDate } from '@/types';
 import { useImportantDates } from '@/contexts/important-dates-context';
 import { format, parseISO, isValid, startOfDay } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CalendarDays, Star, PlusCircle } from 'lucide-react';
+import { CalendarDays, Star, PlusCircle, Trash2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -19,10 +19,11 @@ import { useAuth } from '@/hooks/use-auth';
 export function CalendarView() {
   const { user } = useAuth();
   const [currentCalendarDate, setCurrentCalendarDate] = useState<Date | undefined>(new Date());
-  const { importantDates, addImportantDate, isLoading } = useImportantDates();
+  const { importantDates, addImportantDate, removeImportantDate, isLoading } = useImportantDates();
   const [isImportantDateModalOpen, setIsImportantDateModalOpen] = useState(false);
   const [newImportantDateDesc, setNewImportantDateDesc] = useState('');
   const [newImportantDateDate, setNewImportantDateDate] = useState<Date | undefined>(new Date());
+  const [newImportantDateTime, setNewImportantDateTime] = useState('12:00');
 
   const { toast } = useToast();
 
@@ -71,20 +72,33 @@ export function CalendarView() {
       });
       return;
     }
+    const [hours, minutes] = newImportantDateTime.split(':').map(Number);
+    const dateWithTime = new Date(newImportantDateDate);
+    dateWithTime.setHours(hours, minutes, 0, 0);
+
     const newDate: ImportantDate = {
       id: `imp-${Date.now()}`,
-      date: newImportantDateDate.toISOString(),
+      date: dateWithTime.toISOString(),
       description: newImportantDateDesc.trim(),
       type: 'importantDate',
     };
     await addImportantDate(newDate);
     toast({
       title: 'Important Date Added',
-      description: `"${newDate.description}" on ${format(newImportantDateDate, 'PPP')} added.`,
+      description: `"${newDate.description}" on ${format(dateWithTime, 'PPP p')} added.`,
     });
     setIsImportantDateModalOpen(false);
     setNewImportantDateDesc('');
     setNewImportantDateDate(new Date());
+    setNewImportantDateTime('12:00');
+  };
+
+  const handleDeleteDate = async (id: string, description: string) => {
+    await removeImportantDate(id);
+    toast({
+      title: 'Date Deleted',
+      description: `"${description}" has been removed.`,
+    });
   };
   
   if (isLoading) {
@@ -133,6 +147,16 @@ export function CalendarView() {
                       />
                   </div>
                 </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="impDateTime" className="text-right">Time</Label>
+                  <Input 
+                    id="impDateTime" 
+                    type="time"
+                    value={newImportantDateTime} 
+                    onChange={(e) => setNewImportantDateTime(e.target.value)} 
+                    className="col-span-3"
+                  />
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsImportantDateModalOpen(false)}>Cancel</Button>
@@ -170,10 +194,26 @@ export function CalendarView() {
             <ScrollArea className="h-[calc(100vh-20rem)] max-h-[450px] pr-3">
               <ul className="space-y-3">
                 {selectedDayItems.map(item => (
-                  <li key={item.id} className="p-3 bg-muted/50 rounded-md shadow-sm">
-                    <div className="flex items-center">
-                      <Star className="h-4 w-4 mr-2 text-accent" />
-                      <span className="font-medium text-sm text-accent-foreground">{item.description}</span>
+                  <li key={item.id} className="p-3 bg-muted/50 rounded-md shadow-sm group">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Star className="h-4 w-4 text-accent flex-shrink-0" />
+                        <div>
+                          <p className="font-medium text-sm text-accent-foreground">{item.description}</p>
+                          <p className="text-[10px] text-muted-foreground flex items-center mt-0.5">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {format(parseISO(item.date), 'p')}
+                          </p>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleDeleteDate(item.id, item.description)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </li>
                 ))}
