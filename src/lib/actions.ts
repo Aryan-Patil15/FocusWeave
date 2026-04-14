@@ -38,6 +38,24 @@ import {
 } from '@/ai/flows/summarize-emails';
 
 import {
+  intelligentTaskBreakdown as intelligentTaskBreakdownFlow,
+  type IntelligentTaskBreakdownInput,
+  type IntelligentTaskBreakdownOutput,
+} from '@/ai/flows/intelligent-task-breakdown';
+
+import {
+  speechMeetingAware as speechMeetingAwareFlow,
+  type SpeechMeetingAwareInput,
+  type SpeechMeetingAwareOutput,
+} from '@/ai/flows/speech-meeting-aware';
+
+import {
+  generateFocusInsights as generateFocusInsightsFlow,
+  type GenerateFocusInsightsInput,
+  type GenerateFocusInsightsOutput,
+} from '@/ai/flows/generate-focus-insights';
+
+import {
   getRelevantNews as getRelevantNewsFlow,
 } from '@/ai/flows/get-relevant-news';
 
@@ -254,6 +272,39 @@ export async function handleSummarizeEmails(input: SummarizeEmailsInput): Promis
         priority: 'medium',
       })),
     };
+  }
+}
+
+export async function handleIntelligentTaskBreakdown(
+  input: IntelligentTaskBreakdownInput
+): Promise<IntelligentTaskBreakdownOutput> {
+  try {
+    return await intelligentTaskBreakdownFlow(input);
+  } catch (error) {
+    console.error('Error in handleIntelligentTaskBreakdown:', error);
+    throw new Error('Failed to break down the task. Please try again.');
+  }
+}
+
+export async function handleSpeechMeetingAware(
+  input: SpeechMeetingAwareInput
+): Promise<SpeechMeetingAwareOutput> {
+  try {
+    return await speechMeetingAwareFlow(input);
+  } catch (error) {
+    console.error('Error in handleSpeechMeetingAware:', error);
+    throw new Error('Failed to prepare meeting guidance. Please try again.');
+  }
+}
+
+export async function handleGenerateFocusInsights(
+  input: GenerateFocusInsightsInput
+): Promise<GenerateFocusInsightsOutput> {
+  try {
+    return await generateFocusInsightsFlow(input);
+  } catch (error) {
+    console.error('Error in handleGenerateFocusInsights:', error);
+    throw new Error('Failed to generate focus insights. Please try again.');
   }
 }
 
