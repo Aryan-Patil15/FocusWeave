@@ -80,8 +80,8 @@ Visual calendar view with important date tracking and task scheduling overlay.
 
 ```bash
 # Clone the repository
-git clone https://github.com/AnleaMJ/focusweave.git
-cd focusweave
+git clone https://github.com/AnleaMJ/deyweaver.git
+cd deyweaver
 
 # Install dependencies
 npm install
