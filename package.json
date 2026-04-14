@@ -62,7 +62,7 @@
   },
   "devDependencies": {
     "webpack": "^5.x",
-    "webpack-cli": "^5.x"
+    "webpack-cli": "^5.x",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
