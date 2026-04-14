@@ -13,7 +13,7 @@ export default function ClientProviders({ children }: { children: React.ReactNod
       attribute="class" 
       defaultTheme="light" 
       enableSystem 
-      storageKey="deyweaver-theme"
+      storageKey="focusweave-theme"
       themes={['light', 'dark']}
       disableTransitionOnChange
     >

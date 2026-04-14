@@ -13,7 +13,7 @@ Open docs/index.html in a browser.
 3. Save images in docs/.
 4. Replace the placeholder block with an img tag, for example:
 
-<img src="architecture-diagram.png" alt="DeyWeaver analytics architecture" />
+<img src="architecture-diagram.png" alt="FocusWeave analytics architecture" />
 
 ## Deploy
 

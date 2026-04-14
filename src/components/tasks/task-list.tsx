@@ -17,7 +17,7 @@ import { Card, CardContent } from '@/components/ui/card'; // this part be doing 
 
 // Sample initial tasks for demonstration - will be overridden by localStorage if present
 const fallbackInitialTasks: Task[] = [
-  { id: 'fallback-1', name: 'Welcome to Dey Weaver!', description: 'Add your first task using the "Add Task" button.', dueDate: new Date().toISOString(), priority: 'medium', status: 'todo', category: 'General' },
+  { id: 'fallback-1', name: 'Welcome to FocusWeave!', description: 'Add your first task using the "Add Task" button.', dueDate: new Date().toISOString(), priority: 'medium', status: 'todo', category: 'General' },
 ];
 
 export function TaskList() {

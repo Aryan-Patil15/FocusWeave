@@ -54,7 +54,7 @@ export default function SignupPage() {
       await signupWithEmail(values.email, values.password);
       toast({
         title: 'Signup Successful!',
-        description: 'Welcome to Dey Weaver!',
+        description: 'Welcome to FocusWeave!',
       });
       // this part be doing work fr
     } catch (error) {
@@ -121,7 +121,7 @@ export default function SignupPage() {
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Create an Account</CardTitle>
         <CardDescription>
-          Join Dey Weaver and start planning your days effectively.
+          Join FocusWeave and start planning your days effectively.
         </CardDescription>
       </CardHeader>
       <Form {...form}>

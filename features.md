@@ -1,8 +1,8 @@
-# DeyWeaver — Feature Overview & Impact Analysis
+# FocusWeave — Feature Overview & Impact Analysis
 
 ## Project Summary
 
-**DeyWeaver** is an AI-powered productivity platform that goes beyond generic scheduling tools. Rather than forcing a fixed "9 AM–5 PM" template on every user, it lets individuals define their own daily rhythm — study schedules, work patterns, rest cycles — and then uses a custom-built comparison engine and generative AI to measure how well they actually followed through. The result: a personalized, data-driven feedback loop that respects how people *really* work.
+**FocusWeave** is an AI-powered productivity platform that goes beyond generic scheduling tools. Rather than forcing a fixed "9 AM–5 PM" template on every user, it lets individuals define their own daily rhythm — study schedules, work patterns, rest cycles — and then uses a custom-built comparison engine and generative AI to measure how well they actually followed through. The result: a personalized, data-driven feedback loop that respects how people *really* work.
 
 ---
 
@@ -20,7 +20,7 @@ These assumptions break down for students, freelancers, shift workers, and anyon
 
 ## The Solution
 
-DeyWeaver addresses each of these gaps through six interconnected feature modules:
+FocusWeave addresses each of these gaps through six interconnected feature modules:
 
 ---
 
@@ -136,13 +136,13 @@ Users input an upcoming calendar event alongside their current task list. The AI
 | **AI for insights, not scoring** | The score must be reproducible and explainable. AI handles the squishy part (natural-language feedback), while math handles the precise part (alignment percentage). |
 | **1440-minute baseline array** | Each minute of the day maps to a category. O(1) lookup per minute during comparison. Simple, fast, handles all edge cases uniformly. |
 | **Compatibility matrix** | Not all mismatches are equal. Studying during a "focus" block shouldn't penalize you — the matrix defines acceptable substitutions per block type. |
-| **localStorage persistence** | No backend database needed for MVP. Profile and logs persist across sessions. Follows the existing DeyWeaver pattern for task storage. |
+| **localStorage persistence** | No backend database needed for MVP. Profile and logs persist across sessions. Follows the existing FocusWeave pattern for task storage. |
 
 ---
 
 ## Impact & Innovation Summary
 
-| Dimension | How DeyWeaver Addresses It |
+| Dimension | How FocusWeave Addresses It |
 |-----------|---------------------------|
 | **Personalization** | No fixed schedule assumptions — every user defines their own 24h rhythm |
 | **Precision** | Per-minute comparison with weighted scoring, not binary pass/fail |
@@ -156,7 +156,7 @@ Users input an upcoming calendar event alongside their current task list. The AI
 
 ## Use Cases
 
-| User | Scenario | DeyWeaver Feature |
+| User | Scenario | FocusWeave Feature |
 |------|----------|-------------------|
 | **College student** | Studies best at night, sleeps late, has irregular lecture schedule | Focus Auditor with custom night-owl profile |
 | **Freelancer** | Works in short bursts between client calls, needs to track focus time | Activity log input + deviation report |
@@ -168,7 +168,7 @@ Users input an upcoming calendar event alongside their current task list. The AI
 
 ## API Integration
 
-DeyWeaver integrates with **Google Gemini** (via the Genkit framework) across 9 distinct AI flows, each with:
+FocusWeave integrates with **Google Gemini** (via the Genkit framework) across 9 distinct AI flows, each with:
 - **Typed input/output schemas** (Zod validation) ensuring structured, predictable AI responses
 - **Fallback handling** — every flow degrades gracefully if the AI service is unavailable
 - **Prompt engineering** — each flow has a purpose-built prompt with domain-specific instructions
@@ -181,4 +181,4 @@ Additional API integrations:
 
 ---
 
-*DeyWeaver doesn't just help you plan your day — it helps you understand how you actually spend it, and what to do differently tomorrow.*
+*FocusWeave doesn't just help you plan your day — it helps you understand how you actually spend it, and what to do differently tomorrow.*

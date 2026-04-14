@@ -9,7 +9,7 @@ import { AuthProvider } from '@/components/auth/auth-provider';
 
 
 export const metadata: Metadata = {
-  title: 'Dey Weaver',
+  title: 'FocusWeave',
   description: 'Your day. Your goals. No stress. Let AI handle the mess.',
   icons: {
     icon: '/favicon.ico',

@@ -2,7 +2,7 @@
 import type { Task } from '@/types';
 
 const TASKS_STORAGE_KEY = 'dayWeaverTasks';
-const LEGACY_TASKS_STORAGE_KEYS = ['deyWeaverTasks', 'tasks'];
+const LEGACY_TASKS_STORAGE_KEYS = ['focusWeaveTasks', 'tasks'];
 
 function normalizeStoredTasks(rawValue: unknown): Task[] {
   if (!Array.isArray(rawValue)) {
@@ -73,7 +73,7 @@ export function saveTasksToLocalStorage(tasks: Task[]): void {
   }
   try {
     localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
-    window.dispatchEvent(new Event('deyweaver-tasks-updated'));
+    window.dispatchEvent(new Event('focusweave-tasks-updated'));
   } catch (error) {
     console.error("Error saving tasks to localStorage:", error);
     // quick thing here dont mind

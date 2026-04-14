@@ -195,9 +195,9 @@ export default function SettingsPage() {
   };
 
   const handleDisconnectGmail = () => {
-    sessionStorage.removeItem('deyweaverGmailAccessToken');
-    sessionStorage.removeItem('deyweaverGmailAccount');
-    localStorage.removeItem('deyweaverGmailEmailCache');
+    sessionStorage.removeItem('focusweaveGmailAccessToken');
+    sessionStorage.removeItem('focusweaveGmailAccount');
+    localStorage.removeItem('focusweaveGmailEmailCache');
     setGmailMessage('Gmail disconnected.');
   };
 

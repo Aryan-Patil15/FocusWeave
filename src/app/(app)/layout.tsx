@@ -4,9 +4,9 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
-import { AppHeader } from '@/components/layout/app-header';
+
 import { AppSidebar } from '@/components/layout/app-sidebar';
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { IconSpinner } from '@/components/icons';
 
 export default function AppLayout({
@@ -36,8 +36,10 @@ export default function AppLayout({
   return (
     <SidebarProvider defaultOpen={true}>
       <AppSidebar />
-      <SidebarInset className="flex flex-col min-h-screen">
-        <AppHeader />
+      <SidebarInset className="flex flex-col min-h-screen relative">
+        <div className="md:hidden absolute top-4 right-4 z-50">
+          <SidebarTrigger variant="outline" className="bg-background shadow-sm" />
+        </div>
         <main className="flex-1 p-4 md:p-8 overflow-auto">
           {children}
         </main>

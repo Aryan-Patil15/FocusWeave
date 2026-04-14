@@ -60,7 +60,7 @@ export function DirectSearchWidget() {
           <Search className="h-5 w-5 text-primary" />
           Direct Search
         </CardTitle>
-        <CardDescription>Search Google, YouTube, Quora, or Reddit directly from Dey Weaver</CardDescription>
+        <CardDescription>Search Google, YouTube, Quora, or Reddit directly from FocusWeave</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-3">

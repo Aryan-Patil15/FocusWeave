@@ -1,4 +1,4 @@
-# **App Name**: Dey Weaver
+# **App Name**: FocusWeave
 
 ## Core Features:
 

@@ -6,9 +6,9 @@ export interface QuickLinkItem {
 
 export type WeatherMode = 'device' | 'manual';
 
-const WEATHER_LOCATION_KEY = 'deyweaver.weatherLocation';
-const WEATHER_MODE_KEY = 'deyweaver.weatherMode';
-const QUICK_LINKS_KEY = 'deyweaver.quickLinks';
+const WEATHER_LOCATION_KEY = 'focusweave.weatherLocation';
+const WEATHER_MODE_KEY = 'focusweave.weatherMode';
+const QUICK_LINKS_KEY = 'focusweave.quickLinks';
 
 const DEFAULT_QUICK_LINKS: QuickLinkItem[] = [
   {

@@ -11,7 +11,7 @@ export default function HelpPage() {
       <PageHeader
         eyebrow="Support"
         title="Help & Support"
-        description="Get assistance with Dey Weaver."
+        description="Get assistance with FocusWeave."
       />
 
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
@@ -23,7 +23,7 @@ export default function HelpPage() {
             </p>
           </div>
           <Button asChild size="lg" className="bg-gradient-to-r from-primary to-orange-600 dark:from-primary dark:to-orange-700 hover:from-orange-600 hover:to-orange-700 dark:hover:from-orange-600 dark:hover:to-orange-800">
-            <a href={`mailto:${supportEmail}?subject=Dey Weaver Support Request`}>
+            <a href={`mailto:${supportEmail}?subject=FocusWeave Support Request`}>
               <Mail className="mr-2 h-5 w-5" />
               Mail Customer Support
             </a>

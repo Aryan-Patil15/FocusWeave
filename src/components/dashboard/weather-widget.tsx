@@ -9,7 +9,7 @@ import { getWeatherLocationPreference, getWeatherModePreference } from '@/lib/us
 import { useAuth } from '@/hooks/use-auth';
 import { loadUserSettingsFromDb } from '@/lib/user-settings-db';
 
-const WEATHER_CACHE_KEY = 'deyweaver.weather';
+const WEATHER_CACHE_KEY = 'focusweave.weather';
 const WEATHER_CACHE_TTL_MS = 3 * 60 * 1000;
 
 type CachedWeather = {

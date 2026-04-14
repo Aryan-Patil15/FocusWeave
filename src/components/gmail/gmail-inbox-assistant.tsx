@@ -15,13 +15,13 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { Task } from '@/types';
 
-const GMAIL_TOKEN_STORAGE_KEY = 'deyweaverGmailAccessToken';
-const GMAIL_ACCOUNT_STORAGE_KEY = 'deyweaverGmailAccount';
-const GMAIL_EMAIL_CACHE_STORAGE_KEY = 'deyweaverGmailEmailCache';
+const GMAIL_TOKEN_STORAGE_KEY = 'focusweaveGmailAccessToken';
+const GMAIL_ACCOUNT_STORAGE_KEY = 'focusweaveGmailAccount';
+const GMAIL_EMAIL_CACHE_STORAGE_KEY = 'focusweaveGmailEmailCache';
 const MAX_EMAILS = 6;
 
 function getInboxIntroSeenStorageKey(userId: string) {
-  return `deyweaverGmailInboxIntroSeen:${userId}`;
+  return `focusweaveGmailInboxIntroSeen:${userId}`;
 }
 
 type GmailListResponse = {

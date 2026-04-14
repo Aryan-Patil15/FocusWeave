@@ -8,27 +8,27 @@ import Link from 'next/link';
 import { PageHeader } from '@/components/layout/page-header';
 
 export default function TalkToFounderPage() {
-  const patreonLink = 'https://patreon.com/deyweaver';
-  const openCollectiveLink = 'https://opencollective.com/deyweaver';
-  const githubRepoLink = 'https://github.com/Deyweaver/DeyWeaver';
+  const patreonLink = 'https://patreon.com/focusweave';
+  const openCollectiveLink = 'https://opencollective.com/focusweave';
+  const githubRepoLink = 'https://github.com/FocusWeave/FocusWeave';
 
   return (
     <div className="container mx-auto py-8 space-y-8">
       <PageHeader
         title="Talk to the Founder"
-        description="Support the mission and help keep Dey Weaver alive."
+        description="Support the mission and help keep FocusWeave alive."
       />
 
       <Card>
         <CardHeader>
-          <CardTitle>Dey Weaver Is a Non Profit Open Source Community Project</CardTitle>
+          <CardTitle>FocusWeave Is a Non Profit Open Source Community Project</CardTitle>
           <CardDescription>
             We work on corporate gifts and donations to support ongoing development.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-foreground/90">
-            It is hard to maintain server costs from our side. If Dey Weaver helps you, please consider donating.
+            It is hard to maintain server costs from our side. If FocusWeave helps you, please consider donating.
           </p>
 
           <div className="grid gap-3 sm:grid-cols-2">

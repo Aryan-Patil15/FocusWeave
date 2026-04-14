@@ -81,11 +81,11 @@ export function LifeBalanceChart() {
       fetchData();
     };
 
-    window.addEventListener('deyweaver-tasks-updated', handleTasksUpdated);
+    window.addEventListener('focusweave-tasks-updated', handleTasksUpdated);
     window.addEventListener('focus', handleWindowFocus);
 
     return () => {
-      window.removeEventListener('deyweaver-tasks-updated', handleTasksUpdated);
+      window.removeEventListener('focusweave-tasks-updated', handleTasksUpdated);
       window.removeEventListener('focus', handleWindowFocus);
     };
   }, []);

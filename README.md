@@ -1,16 +1,16 @@
 ![version](https://img.shields.io/badge/version-v0.0.3-orange)
-# DeyWeaver — Adaptive Focus Auditor
+# FocusWeave — Adaptive Focus Auditor
 
 > Your day. Your goals. No stress. Let AI handle the mess.
 
-DeyWeaver is an AI-integrated productivity platform that helps users organize their day, prioritize tasks, and optimize time management through intelligent scheduling. It features the **Adaptive Focus Auditor** — a system that respects each user's unique daily rhythm, compares planned vs. actual behavior, and delivers personalized productivity insights powered by AI.
+FocusWeave is an AI-integrated productivity platform that helps users organize their day, prioritize tasks, and optimize time management through intelligent scheduling. It features the **Adaptive Focus Auditor** — a system that respects each user's unique daily rhythm, compares planned vs. actual behavior, and delivers personalized productivity insights powered by AI.
 
 ---
 
 ## Core Features
 
 ### 🎯 Adaptive Focus Auditor
-The standout feature — most productivity tools assume a rigid 9-to-5 schedule. DeyWeaver lets users **define their own ideal 24-hour routine** and then **audits their actual behavior** against it.
+The standout feature — most productivity tools assume a rigid 9-to-5 schedule. FocusWeave lets users **define their own ideal 24-hour routine** and then **audits their actual behavior** against it.
 
 - **Custom Profile Builder** — Define your personal 24-hour schedule with time blocks for focus, study, rest, sleep, social, exercise, and more. Visualized as an interactive circular clock.
 - **Activity Log Input** — Paste or upload JSON-formatted activity logs with timestamps, durations, and activity types. Built-in validation handles up to 200 entries per session.
@@ -80,8 +80,8 @@ Visual calendar view with important date tracking and task scheduling overlay.
 
 ```bash
 # Clone the repository
-git clone https://github.com/AnleaMJ/deyweaver.git
-cd deyweaver
+git clone https://github.com/AnleaMJ/focusweave.git
+cd focusweave
 
 # Install dependencies
 npm install
@@ -196,7 +196,7 @@ src/
 
 ## What Makes It Different
 
-| Feature | Traditional Apps | DeyWeaver |
+| Feature | Traditional Apps | FocusWeave |
 |---------|-----------------|-----------|
 | Schedule model | Fixed 9-to-5 | Fully personalized 24h profile |
 | Activity tracking | Manual check-ins | JSON log import with validation |

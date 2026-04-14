@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { IconSpinner } from '@/components/icons';
 import { handleFetchQuote, type QuoteResult } from '@/lib/actions';
 
-const QUOTE_CACHE_KEY = 'deyweaver.quoteOfTheDay';
+const QUOTE_CACHE_KEY = 'focusweave.quoteOfTheDay';
 const QUOTE_CACHE_TTL_MS = 3 * 60 * 1000;
 
 type CachedQuote = {

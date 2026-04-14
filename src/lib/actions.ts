@@ -37,6 +37,10 @@ import {
   type SummarizeEmailsOutput,
 } from '@/ai/flows/summarize-emails';
 
+import {
+  getRelevantNews as getRelevantNewsFlow,
+} from '@/ai/flows/get-relevant-news';
+
 const LIFE_CATEGORY_DEFINITIONS: Array<{
   name: string;
   description: string;
@@ -467,7 +471,7 @@ export async function handleFetchQuote(): Promise<QuoteResult> {
   const fallback: QuoteResult = {
     ok: false,
     quote: 'Progress is built one focused day at a time.',
-    author: 'Dey Weaver',
+    author: 'FocusWeave',
     error: 'Unable to fetch quote right now.',
   };
 
@@ -490,7 +494,7 @@ export async function handleFetchQuote(): Promise<QuoteResult> {
   }
 }
 
-export async function handleFetchTopNews(): Promise<TopNewsResult> {
+export async function handleFetchTopNews(category: string = 'worldnews'): Promise<TopNewsResult> {
   const fallbackItems: NewsItem[] = [
     {
       title: 'Catch up with world updates from your preferred news source.',
@@ -514,29 +518,61 @@ export async function handleFetchTopNews(): Promise<TopNewsResult> {
   };
 
   try {
-    const data = await fetchJsonWithTimeout<RedditWorldNewsResponse>(
-      'https://www.reddit.com/r/worldnews/top.json?limit=6&t=day',
-      9000
-    );
+    const safeCategory = category.trim() || 'worldnews';
+    const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(safeCategory)}&hl=en-US&gl=US&ceid=US:en`;
+    
+    // 1. Fetch raw news from Google News RSS
+    let rawPosts: NewsItem[] = [];
+    try {
+      const response = await fetch(rssUrl, { cache: 'no-store' });
+      const rssText = await response.text();
+      
+      const itemRegex = /<item>[\s\S]*?<title><!\[CDATA\[(.*?)\]\]><\/title>[\s\S]*?<link>(.*?)<\/link>[\s\S]*?<\/item>/g;
+      let match;
+      while ((match = itemRegex.exec(rssText)) !== null && rawPosts.length < 15) {
+        rawPosts.push({ title: match[1], url: match[2] });
+      }
+      
+      if (rawPosts.length === 0) {
+        const fallbackRegex = /<item>[\s\S]*?<title>(.*?)<\/title>[\s\S]*?<link>(.*?)<\/link>[\s\S]*?<\/item>/g;
+        while ((match = fallbackRegex.exec(rssText)) !== null && rawPosts.length < 15) {
+          let title = match[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+          rawPosts.push({ title, url: match[2] });
+        }
+      }
+    } catch(err) {
+      console.warn("Failed to fetch raw posts from Global News", err);
+    }
 
-    const items =
-      data.data?.children
-        ?.map((child) => ({
-          title: child.data?.title?.trim() || '',
-          url: child.data?.url?.trim() || '',
-        }))
-        .filter((item) => item.title.length > 0 && /^https?:\/\//.test(item.url))
-        .slice(0, 3) || [];
-
-    if (items.length === 0) {
+    if (rawPosts.length === 0) {
       return fallback;
     }
 
-    return {
-      ok: true,
-      items,
-      source: 'r/worldnews (English)',
-    };
+    // 2. Use AI to curate and rewrite the best ones
+    try {
+      const aiResult = await getRelevantNewsFlow({ category, rawPosts });
+      
+      if (aiResult.items && aiResult.items.length > 0) {
+        return {
+          ok: true,
+          items: aiResult.items,
+          source: aiResult.source || 'AI Curated Global News',
+        };
+      }
+    } catch (aiError) {
+      console.warn('AI compilation failed, falling back to raw posts:', aiError);
+      // Fallback: If AI fails, show top 3 raw news directly
+      return {
+        ok: true,
+        items: rawPosts.slice(0, 3).map(p => ({
+          ...p,
+          title: p.title.replace(/\s-[^-]*$/, '')
+        })),
+        source: `Global News (${safeCategory})`,
+      };
+    }
+    
+    return fallback;
   } catch (error) {
     console.error('Error fetching top news:', error);
     return fallback;
