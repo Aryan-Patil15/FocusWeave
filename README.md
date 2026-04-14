@@ -5,6 +5,18 @@
 
 FocusWeave is an AI-integrated productivity platform that helps users organize their day, prioritize tasks, and optimize time management through intelligent scheduling. It features the **Adaptive Focus Auditor** — a system that respects each user's unique daily rhythm, compares planned vs. actual behavior, and delivers personalized productivity insights powered by AI.
 
+## Positioning
+
+> “We don’t manage time. We understand behavior.”
+>
+> “Apps optimize calendars. FocusWeave optimizes humans.”
+
+FocusWeave is evolving from a generic productivity assistant into a **Behavior Intelligence System** built around a winning 3-part loop:
+
+1. **Real-time detection** — Identify deep focus, shallow work, fatigue, and interruption-heavy windows as logs are imported.
+2. **Root-cause AI** — Detect behavioral loops (distraction, avoidance, fragmentation, overplanning) and surface actionable causes.
+3. **Dopamine reward system** — Award deep-work points, track streaks, and level up user motivation to compete with social media dopamine loops.
+
 ---
 
 ## Core Features
@@ -22,6 +34,9 @@ The standout feature — most productivity tools assume a rigid 9-to-5 schedule.
 - **Plan vs. Actual Timeline** — Side-by-side color-coded visualization comparing your intended schedule against what actually happened.
 - **Deviation Report** — Detailed table of every mismatch with exact time ranges, expected vs. actual activities, duration, and point impact.
 - **AI-Powered Insights** — Gemini-generated natural-language suggestions based on your audit data (e.g., *"You spent 45 min on social media during focus time. Move it to your 5–7 PM social block."*), with rule-based fallback when AI is unavailable.
+- **Real-Time Cognitive Detection** — Continuously estimates cognitive state (deep-focus, shallow-work, fatigue, peak-performance) from imported activity signals.
+- **Root-Cause Behavior AI** — Detects repeated behavior loops and explains *why* execution is slipping.
+- **Dopamine Reward System (Addictive Focus)** — Earn points for aligned deep work, build streaks, and progress through Bronze/Silver/Gold/Platinum levels.
 
 ---
 
@@ -204,6 +219,30 @@ src/
 | Midnight handling | ❌ | ✅ Auto-splits across midnight |
 | Insights | Generic tips | AI-generated, context-specific suggestions |
 | Scoring | Binary pass/fail | Weighted per-minute with compatibility matrix |
+| Behavioral intelligence | Rarely modeled | Real-time cognitive detection + root-cause loop detection |
+| Motivation design | Passive tracking | Deep-work points, streaks, and gamified rewards |
+
+---
+
+## Dopamine Reward System (Addictive Focus)
+
+### 💡 Idea
+Compete with Instagram-style dopamine loops using productive rewards.
+
+### ⚙️ What it does
+- Earn points for deep work and high alignment audits
+- Maintain daily focus streaks
+- Unlock higher reward tiers (Bronze → Silver → Gold → Platinum)
+
+### 🎯 Why this wins
+- Makes the product more engaging and sticky
+- Easy to demo visually through points and streak cards
+
+### ⚔️ Perfect Combo (Use This)
+Build these 3 together:
+- Real-time detection
+- Root-cause AI
+- Reward system
 
 ---
 
@@ -214,6 +253,5 @@ This project is licensed under the [MIT License](LICENSE).
 ## DEMO Video
 
 Unable to issue video link by github. Videos have been manually uploaded as "Demo1", "Demo2", "Demo3"
-
 
 
