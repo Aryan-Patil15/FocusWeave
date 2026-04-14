@@ -42,3 +42,5 @@ export interface ImportantDate {
   description: string;
   type: 'importantDate'; // idk this does stuff lol
 }
+
+export * from './behavior-intelligence';
