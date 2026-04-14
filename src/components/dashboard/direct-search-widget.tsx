@@ -44,17 +44,23 @@ export function DirectSearchWidget() {
     }
 
     const baseUrl = SEARCH_ENGINES[engine].baseUrl;
-    const url = `${baseUrl}${encodeURIComponent(normalized)}`;
+    let url = '';
+    
+    // Construct URL properly
+    url = `${baseUrl}${encodeURIComponent(normalized)}`;
+    
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    runSearch();
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      runSearch();
+    }
   };
 
   return (
-    <Card className="h-full border-border/80 shadow-sm">
+    <Card className="h-full border-border/80 shadow-sm" onPointerDown={(e) => e.stopPropagation()}>
       <CardHeader className="space-y-2">
         <CardTitle className="flex items-center gap-2 text-xl">
           <Search className="h-5 w-5 text-primary" />
@@ -63,7 +69,7 @@ export function DirectSearchWidget() {
         <CardDescription>Search Google, YouTube, Quora, or Reddit directly from FocusWeave</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="space-y-3">
           <Select value={engine} onValueChange={(value) => setEngine(value as SearchEngineKey)}>
             <SelectTrigger>
               <SelectValue placeholder="Choose a search engine" />
@@ -80,13 +86,14 @@ export function DirectSearchWidget() {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder={placeholder}
             />
-            <Button type="submit" disabled={!query.trim()}>
+            <Button onClick={runSearch} disabled={!query.trim()}>
               Search
             </Button>
           </div>
-        </form>
+        </div>
       </CardContent>
     </Card>
   );

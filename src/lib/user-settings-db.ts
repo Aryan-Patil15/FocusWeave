@@ -9,7 +9,6 @@ export interface UserSettingsRecord {
   weatherLocation?: string;
   quickLinks?: QuickLinkItem[];
   theme?: 'light' | 'dark' | 'system';
-  gmailInboxIntroSeen?: boolean;
 }
 
 function sanitizeQuickLinks(input: unknown): QuickLinkItem[] {
@@ -45,7 +44,6 @@ export async function loadUserSettingsFromDb(userId: string | null | undefined):
       weatherLocation: typeof data.weatherLocation === 'string' ? data.weatherLocation : undefined,
       quickLinks: sanitizeQuickLinks(data.quickLinks),
       theme: data.theme === 'light' || data.theme === 'dark' || data.theme === 'system' ? data.theme : undefined,
-      gmailInboxIntroSeen: data.gmailInboxIntroSeen === true,
     };
   } catch (error) {
     console.error('Error loading user settings from database:', error);
@@ -78,10 +76,6 @@ export async function saveUserSettingsToDb(
 
     if (settings.theme === 'light' || settings.theme === 'dark' || settings.theme === 'system') {
       payload.theme = settings.theme;
-    }
-
-    if (typeof settings.gmailInboxIntroSeen === 'boolean') {
-      payload.gmailInboxIntroSeen = settings.gmailInboxIntroSeen;
     }
 
     const ref = doc(db, PREFS_COLLECTION, userId);

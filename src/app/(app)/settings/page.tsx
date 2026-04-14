@@ -41,7 +41,6 @@ export default function SettingsPage() {
   const [quickLinkMessage, setQuickLinkMessage] = useState('');
   const [widgetPreferences, setWidgetPreferences] = useState<DashboardWidgetPreferences>(getDefaultDashboardWidgetPreferences());
   const [widgetPreferencesMessage, setWidgetPreferencesMessage] = useState('');
-  const [gmailMessage, setGmailMessage] = useState('');
 
   useEffect(() => {
     setIsMounted(true);
@@ -194,12 +193,6 @@ export default function SettingsPage() {
     setQuickLinkMessage('Quick links reset to default.');
   };
 
-  const handleDisconnectGmail = () => {
-    sessionStorage.removeItem('focusweaveGmailAccessToken');
-    sessionStorage.removeItem('focusweaveGmailAccount');
-    localStorage.removeItem('focusweaveGmailEmailCache');
-    setGmailMessage('Gmail disconnected.');
-  };
 
   if (!isMounted) {
     return null;
@@ -308,18 +301,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <div className="space-y-4">
-          <div className="border-b border-border pb-4">
-            <h2 className="text-2xl font-semibold text-foreground">Inbox</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Manage your Gmail connection.</p>
-          </div>
-          <Button variant="outline" onClick={handleDisconnectGmail}>
-            Disconnect Gmail
-          </Button>
-          {gmailMessage && <p className="text-sm text-muted-foreground">{gmailMessage}</p>}
-        </div>
-      </div>
 
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         <div className="space-y-4">
