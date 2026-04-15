@@ -314,21 +314,159 @@ export async function handleGenerateFocusInsights(
   }
 }
 
+function normalizeMinutes(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  return Math.round(value);
+}
+
+function getTaskAuditKeywords(task: AuditTaskAlignmentInput['doneTasks'][number]): string[] {
+  return `${task.name} ${task.description ?? ''}`
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((token) => token.length >= 3);
+}
+
+function activityLooksDistracting(activity: string): boolean {
+  const normalized = activity.toLowerCase();
+  return ['social', 'idle', 'scroll', 'youtube', 'netflix', 'instagram', 'x.com', 'twitter', 'gaming'].some((term) =>
+    normalized.includes(term)
+  );
+}
+
+function buildAuditTaskAlignmentFallback(
+  input: AuditTaskAlignmentInput,
+  options?: { includeFailureInsight?: boolean }
+): AuditTaskAlignmentOutput {
+  const totalTrackedMinutes = normalizeMinutes(
+    input.activityLogs.reduce((sum, log) => sum + normalizeMinutes(log.duration), 0)
+  );
+
+  if (input.doneTasks.length === 0 || input.activityLogs.length === 0) {
+    return {
+      alignmentScore: 0,
+      totalTrackedMinutes,
+      alignedMinutes: 0,
+      taskBreakdown: [],
+      unrelatedMinutes: totalTrackedMinutes,
+      insights: ['Add done tasks and activity logs to generate an audit.'],
+    };
+  }
+
+  const taskDurations = new Map<string, number>();
+  input.doneTasks.forEach((task) => {
+    taskDurations.set(task.id, 0);
+  });
+
+  let unrelatedMinutes = 0;
+
+  for (const log of input.activityLogs) {
+    const normalizedActivity = log.activity.toLowerCase();
+    const minutes = normalizeMinutes(log.duration);
+
+    if (activityLooksDistracting(normalizedActivity)) {
+      unrelatedMinutes += minutes;
+      continue;
+    }
+
+    let bestTaskId: string | null = null;
+    let bestScore = -1;
+
+    for (const task of input.doneTasks) {
+      const keywords = getTaskAuditKeywords(task);
+      let score = 0;
+
+      for (const keyword of keywords) {
+        if (normalizedActivity.includes(keyword)) {
+          score += keyword.length > 5 ? 3 : 2;
+        }
+      }
+
+      const combinedTaskText = `${task.name} ${task.description ?? ''}`.toLowerCase();
+      if (normalizedActivity.includes('study') && combinedTaskText.includes('study')) score += 4;
+      if (normalizedActivity.includes('commute') && combinedTaskText.includes('travel')) score += 5;
+      if (normalizedActivity.includes('commute') && combinedTaskText.includes('college')) score += 4;
+      if (normalizedActivity.includes('research') && combinedTaskText.includes('news')) score += 4;
+      if (normalizedActivity.includes('model') && combinedTaskText.includes('model')) score += 5;
+      if (normalizedActivity.includes('class') && combinedTaskText.includes('class')) score += 4;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestTaskId = task.id;
+      }
+    }
+
+    if (!bestTaskId || bestScore <= 0) {
+      unrelatedMinutes += minutes;
+      continue;
+    }
+
+    taskDurations.set(bestTaskId, (taskDurations.get(bestTaskId) ?? 0) + minutes);
+  }
+
+  const taskBreakdown = input.doneTasks
+    .map((task) => {
+      const actualMinutes = taskDurations.get(task.id) ?? 0;
+      const expectedMinutes = normalizeMinutes(task.duration ?? 0);
+      const baseline = expectedMinutes > 0 ? expectedMinutes : Math.max(actualMinutes, 30);
+      const alignmentPercentage =
+        actualMinutes === 0 ? 0 : Math.min(100, Math.round((actualMinutes / Math.max(baseline, 1)) * 100));
+
+      return {
+        taskId: task.id,
+        taskName: task.name,
+        actualMinutes,
+        alignmentPercentage,
+      };
+    })
+    .filter((task) => task.actualMinutes > 0)
+    .sort((a, b) => b.actualMinutes - a.actualMinutes);
+
+  const alignedMinutes = taskBreakdown.reduce((sum, task) => sum + task.actualMinutes, 0);
+  const alignmentScore =
+    totalTrackedMinutes > 0 ? Math.min(100, Math.round((alignedMinutes / totalTrackedMinutes) * 100)) : 0;
+
+  const insights = [
+    alignedMinutes > 0
+      ? `${alignedMinutes} of ${totalTrackedMinutes} tracked minutes matched completed tasks.`
+      : 'Your current logs do not clearly map to the completed tasks yet.',
+    taskBreakdown[0]
+      ? `"${taskBreakdown[0].taskName}" received the most matched time at ${taskBreakdown[0].actualMinutes} minutes.`
+      : 'No task received a strong activity match yet.',
+    unrelatedMinutes > 0
+      ? `${unrelatedMinutes} minutes were treated as unrelated or distracting activity.`
+      : 'Most logged time aligned with your completed tasks.',
+    options?.includeFailureInsight
+      ? 'Fallback audit logic was used because the AI audit service was unavailable.'
+      : 'Fallback audit logic was used to keep the dashboard responsive.',
+  ];
+
+  return {
+    alignmentScore,
+    totalTrackedMinutes,
+    alignedMinutes,
+    taskBreakdown,
+    unrelatedMinutes,
+    insights,
+  };
+}
+
 export async function handleAuditTaskAlignment(
   input: AuditTaskAlignmentInput
 ): Promise<AuditTaskAlignmentOutput> {
   try {
-    return await auditTaskAlignmentFlow(input);
+    const result = await auditTaskAlignmentFlow(input);
+
+    if (
+      result.totalTrackedMinutes === 0 ||
+      (result.taskBreakdown.length === 0 && input.activityLogs.length > 0)
+    ) {
+      return buildAuditTaskAlignmentFallback(input);
+    }
+
+    return result;
   } catch (error) {
     console.error('Error in handleAuditTaskAlignment:', error);
-    return {
-      alignmentScore: 0,
-      totalTrackedMinutes: 0,
-      alignedMinutes: 0,
-      taskBreakdown: [],
-      unrelatedMinutes: 0,
-      insights: ["AI Audit service is currently experiencing issues. Please check your logs and try again later."]
-    };
+    return buildAuditTaskAlignmentFallback(input, { includeFailureInsight: true });
   }
 }
 
